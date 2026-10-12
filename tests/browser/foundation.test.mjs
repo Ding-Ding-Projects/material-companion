@@ -189,11 +189,44 @@ test("nonstandard origin ports and absent native grant inventory are rejected", 
   assert.throws(() => validateProject(p));
 });
 test("portable schema retains all four strict versioned descriptor definitions", async () => {
-  const schema = JSON.parse(await readFile(new URL("../../adapter-kit/descriptors.schema.json", import.meta.url), "utf8"));
+  const schema = JSON.parse(
+    await readFile(
+      new URL("../../adapter-kit/descriptors.schema.json", import.meta.url),
+      "utf8",
+    ),
+  );
   assert.equal(schema.$ref, "#/$defs/ProjectDescriptor");
-  for (const name of ["ProjectDescriptor", "SurfaceDescriptor", "ElementDescriptor", "ActionDescriptor"]) {
+  for (const name of [
+    "ProjectDescriptor",
+    "SurfaceDescriptor",
+    "ElementDescriptor",
+    "ActionDescriptor",
+  ]) {
     assert.equal(schema.$defs[name].additionalProperties, false);
     assert.ok(schema.$defs[name].required.includes("id"));
   }
-  assert.equal(schema.$defs.ProjectDescriptor.properties.schemaVersion.const, 1);
+  assert.equal(
+    schema.$defs.ProjectDescriptor.properties.schemaVersion.const,
+    1,
+  );
+});
+test("clearing presentation storage restores original wording in another active view", async () => {
+  const cache = {};
+  const storage = {
+    get: async (key) => ({ [key]: cache[key] }),
+    set: async (data) => Object.assign(cache, data),
+    remove: async (key) => {
+      delete cache[key];
+    },
+  };
+  const first = new PresentationStore(storage),
+    second = new PresentationStore(storage);
+  await first.replace(
+    '{"schemaVersion":1,"entries":{"Projects":"Collections"}}',
+  );
+  await second.restore();
+  assert.equal(ownedLabel("Projects", second.current), "Collections");
+  await first.clear();
+  assert.equal(await second.restore(), "original");
+  assert.equal(ownedLabel("Projects", second.current), "Projects");
 });

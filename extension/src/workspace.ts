@@ -18,6 +18,7 @@ import {
   boundedSearch,
   PresentationStore,
 } from "./presentation.mjs";
+import { reconcileOperations } from "./operations.mjs";
 type Tab =
   | "Projects"
   | "Inspector"
@@ -113,6 +114,8 @@ export class CompanionWorkspace extends LitElement {
   operations: any[] = [];
   toolResult = "";
   abort?: AbortController;
+  textControllers = new Map<string, AbortController>();
+  latestTextOperation = "";
   presentation = new PresentationStore(chrome.storage.local);
   provenance: any;
   storageChanged = (changes: any, area: string) => {
@@ -131,7 +134,10 @@ export class CompanionWorkspace extends LitElement {
       }
     }
     if (changes.operations?.newValue)
-      this.operations = changes.operations.newValue.slice(-100);
+      this.operations = reconcileOperations(
+        this.operations,
+        changes.operations.newValue,
+      );
     if (changes.vocabulary) {
       this.run(async () => {
         await this.presentation.restore();
@@ -314,7 +320,7 @@ export class CompanionWorkspace extends LitElement {
       this.query = this.settings.query ?? "";
       this.regex = this.settings.regex === true;
       this.projects = (cache.projects ?? []).slice(0, 64).map(validateProject);
-      this.operations = (cache.operations ?? []).slice(-100);
+      this.operations = reconcileOperations([], cache.operations ?? []);
       const presentationState = await this.presentation.restore();
       this.vocabulary = this.presentation.current;
       if (presentationState === "corrupt-cache-cleared")
@@ -360,7 +366,6 @@ export class CompanionWorkspace extends LitElement {
         regex: this.regex,
       },
       projects: this.projects,
-      operations: this.operations.slice(-100),
     });
     this.applySettings();
   }
@@ -442,24 +447,29 @@ export class CompanionWorkspace extends LitElement {
     }
   }
   async countText() {
-    this.abort = new AbortController();
     const text = this.value("text");
     if (text.length > 65536) throw new Error("Text limit: 65,536 characters");
+    const controller = new AbortController();
+    this.abort = controller;
     const op = {
       id: crypto.randomUUID(),
       kind: "text-count",
       state: "running",
       createdAt: new Date().toISOString(),
     };
-    this.operations = [...this.operations, op];
-    await this.save();
+    this.latestTextOperation = op.id;
+    this.textControllers.set(op.id, controller);
+    await this.persistOperation(op);
     await new Promise((r) => setTimeout(r, 50));
-    if (this.abort.signal.aborted) {
-      op.state = "cancelled";
+    const finalState = controller.signal.aborted ? "cancelled" : "completed";
+    await this.persistOperation({ ...op, state: finalState });
+    this.textControllers.delete(op.id);
+    this.abort = [...this.textControllers.values()].at(-1);
+    if (this.latestTextOperation !== op.id) return;
+    if (controller.signal.aborted) {
       this.notice = "Local operation cancelled.";
     } else {
       this.toolResult = `Characters: ${Array.from(text).length}\nWords: ${text.trim() ? text.trim().split(/\s+/u).length : 0}\nLines: ${text.split(/\r?\n/).length}`;
-      op.state = "completed";
       this.notice =
         this.settings.language === "zh-HK"
           ? this.settings.cantoneseHumor > 50
@@ -469,8 +479,13 @@ export class CompanionWorkspace extends LitElement {
             ? "Count finished. The words stayed in their lane."
             : "Text count completed.";
     }
-    this.operations = [...this.operations];
-    await this.save();
+  }
+  async persistOperation(operation: any) {
+    this.operations = reconcileOperations(this.operations, [operation]);
+    const reply = await this.send("operation-update", { operation });
+    if (!Array.isArray(reply.operations))
+      throw new Error("Operation record could not be persisted");
+    this.operations = reconcileOperations(this.operations, reply.operations);
   }
   registry(id: string, help: string, body: any) {
     return html`<article

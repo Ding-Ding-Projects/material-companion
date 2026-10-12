@@ -27,6 +27,7 @@ function host() {
     outgoing = [],
     store = { scopes: [{ ...descriptor.scope, enabled: true }] };
   let permission = true;
+  let executeWait;
   const tab = { id: 7, url: "https://example.github.io/lab/" };
   const event = (name) => ({
     addListener: (fn) => {
@@ -45,19 +46,25 @@ function host() {
         get: async (key) => ({ [key]: store[key] }),
         set: async (data) => Object.assign(store, data),
       },
+      onChanged: event("storageChanged"),
     },
     tabs: {
       query: async () => [tab],
       onUpdated: event("updated"),
       onRemoved: event("removed"),
     },
-    permissions: { contains: async () => permission },
+    permissions: {
+      contains: async () => permission,
+      onRemoved: event("permissionRemoved"),
+      onAdded: event("permissionAdded"),
+    },
     scripting: {
       executeScript: async (target) => {
         assert.deepEqual(JSON.parse(JSON.stringify(target.target)), {
           tabId: 7,
           frameIds: [0],
         });
+        if (executeWait) await executeWait;
         return [
           { result: JSON.stringify(descriptor), documentId: "document-one" },
         ];
@@ -93,6 +100,9 @@ function host() {
     outgoing,
     store,
     tab,
+    setExecuteWait: (wait) => {
+      executeWait = wait;
+    },
     setPermission: (value) => {
       permission = value;
     },
@@ -170,4 +180,68 @@ test("incompatible native protocol keeps its reason after disconnect", async () 
   await h.send({ type: "native-connect" });
   h.events.nativeMessage({ version: 2, state: "ready" });
   assert.equal((await h.send({ type: "native-state" })).state, "incompatible");
+});
+test("late discovery cannot rebind a document after same URL navigation", async () => {
+  const h = host();
+  let release;
+  h.setExecuteWait(
+    new Promise((r) => {
+      release = r;
+    }),
+  );
+  const discovery = h.send({ type: "discover" });
+  await new Promise((r) => setImmediate(r));
+  h.events.updated(7, { status: "loading" });
+  release();
+  assert.equal((await discovery).state, "stale-document");
+});
+test("native submit rechecks current enabled scope and actual browser permission", async () => {
+  const h = host();
+  const d = await h.send({ type: "discover" });
+  h.store.scopes[0].enabled = false;
+  assert.equal(
+    (
+      await h.send({
+        type: "native-submit",
+        documentId: d.documentId,
+        text: "x",
+        grantGeneration: 1,
+      })
+    ).state,
+    "out-of-scope",
+  );
+  const p = host();
+  const pd = await p.send({ type: "discover" });
+  p.setPermission(false);
+  assert.equal(
+    (
+      await p.send({
+        type: "native-submit",
+        documentId: pd.documentId,
+        text: "x",
+        grantGeneration: 1,
+      })
+    ).state,
+    "permission-required",
+  );
+});
+test("scope or permission changes invalidate cached document identity", async () => {
+  for (const event of ["storageChanged", "permissionRemoved"]) {
+    const h = host();
+    const d = await h.send({ type: "discover" });
+    if (event === "storageChanged")
+      h.events[event]({ scopes: { newValue: [] } }, "local");
+    else h.events[event]({ origins: [descriptor.scope.origin + "/*"] });
+    assert.equal(
+      (
+        await h.send({
+          type: "native-submit",
+          documentId: d.documentId,
+          text: "x",
+          grantGeneration: 1,
+        })
+      ).state,
+      "stale-document",
+    );
+  }
 });

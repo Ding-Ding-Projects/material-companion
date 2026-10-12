@@ -3,6 +3,8 @@ import {
   scopeMatches,
   validateProject,
 } from "../../adapter-kit/index.mjs";
+import { OperationLedger } from "./operations.mjs";
+const operationLedger = new OperationLedger(chrome.storage.local);
 const HOST = "org.material_companion.host";
 let nativePort: chrome.runtime.Port | undefined;
 let nativeState = "disconnected";
@@ -22,6 +24,22 @@ const documents = new Map<
   number,
   { id: string; url: string; descriptor: any }
 >();
+const navigationBindings = new Map<number, object>();
+let authorizationGeneration = 0;
+function invalidateAllDocuments() {
+  authorizationGeneration++;
+  documents.clear();
+  navigationBindings.clear();
+}
+async function liveScope(url: string) {
+  const scope = (await scopes()).find(
+    (s: any) => s.enabled && scopeMatches(s, url, 0),
+  );
+  if (!scope) return { state: "out-of-scope" };
+  if (!(await chrome.permissions.contains({ origins: [scope.origin + "/*"] })))
+    return { state: "permission-required" };
+  return { state: "ready", scope };
+}
 async function scopes() {
   return (await chrome.storage.local.get("scopes")).scopes ?? [];
 }
@@ -70,14 +88,13 @@ function connect() {
 async function discover() {
   const tab = await active();
   if (!tab?.id || !tab.url) return { state: "unsupported-page" };
-  const permitted = (await scopes()).find(
-    (s: any) => s.enabled && scopeMatches(s, tab.url, 0),
-  );
-  if (!permitted) return { state: "out-of-scope", url: tab.url };
-  if (
-    !(await chrome.permissions.contains({ origins: [permitted.origin + "/*"] }))
-  )
-    return { state: "permission-required", url: tab.url };
+  const binding = navigationBindings.get(tab.id) ?? {};
+  navigationBindings.set(tab.id, binding);
+  const authorization = authorizationGeneration;
+  const permission = await liveScope(tab.url);
+  if (permission.state !== "ready")
+    return { state: permission.state, url: tab.url };
+  const permitted = permission.scope;
   try {
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id, frameIds: [0] },
@@ -90,6 +107,19 @@ async function discover() {
         return text.length <= 131072 ? text : null;
       },
     });
+    if (
+      navigationBindings.get(tab.id) !== binding ||
+      authorizationGeneration !== authorization
+    )
+      return { state: "stale-document" };
+    const current = await active();
+    if (
+      current?.id !== tab.id ||
+      current.url !== tab.url ||
+      navigationBindings.get(tab.id) !== binding ||
+      authorizationGeneration !== authorization
+    )
+      return { state: "stale-document" };
     const result = results[0];
     if (!result?.result) return { state: "descriptor-absent", url: tab.url };
     const descriptor = validateProject(JSON.parse(result.result));
@@ -98,7 +128,8 @@ async function discover() {
       descriptor.scope.path !== permitted.path
     )
       return { state: "descriptor-scope-mismatch", url: tab.url };
-    const id = result.documentId ?? crypto.randomUUID();
+    if (!result.documentId) return { state: "document-identity-unavailable" };
+    const id = result.documentId;
     documents.set(tab.id, { id, url: tab.url, descriptor });
     return {
       state: "ready",
@@ -112,9 +143,20 @@ async function discover() {
   }
 }
 chrome.tabs.onUpdated.addListener((id, change) => {
-  if (change.status === "loading" || change.url) documents.delete(id);
+  if (change.status === "loading" || change.url) {
+    documents.delete(id);
+    navigationBindings.delete(id);
+  }
 });
-chrome.tabs.onRemoved.addListener((id) => documents.delete(id));
+chrome.tabs.onRemoved.addListener((id) => {
+  documents.delete(id);
+  navigationBindings.delete(id);
+});
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.scopes) invalidateAllDocuments();
+});
+chrome.permissions.onRemoved.addListener(invalidateAllDocuments);
+chrome.permissions.onAdded.addListener(invalidateAllDocuments);
 chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })
   .catch(() => {});
@@ -127,6 +169,8 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     return false;
   (async () => {
     if (message?.type === "discover") return discover();
+    if (message?.type === "operation-update")
+      return { operations: await operationLedger.update(message.operation) };
     if (message?.type === "native-state")
       return { state: nativeState, reviewTransport };
     if (message?.type === "native-connect") {
@@ -143,6 +187,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       if (index < 0) list.push(item);
       else list[index] = item;
       if (list.length > 64) throw new Error("Scope limit reached");
+      invalidateAllDocuments();
       await chrome.storage.local.set({ scopes: list });
       return { state: "saved" };
     }
@@ -151,6 +196,19 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       const tab = await active(),
         doc = tab?.id ? documents.get(tab.id) : undefined;
       if (!doc || doc.id !== message.documentId || doc.url !== tab?.url)
+        return { state: "stale-document" };
+      const authorization = authorizationGeneration;
+      const permission = await liveScope(tab!.url!);
+      if (permission.state !== "ready") {
+        documents.delete(tab!.id!);
+        return { state: permission.state };
+      }
+      if (
+        documents.get(tab!.id!) !== doc ||
+        authorizationGeneration !== authorization ||
+        permission.scope.origin !== doc.descriptor.scope.origin ||
+        permission.scope.path !== doc.descriptor.scope.path
+      )
         return { state: "stale-document" };
       if (nativeState !== "ready" || !nativePort) return { state: nativeState };
       if (reviewTransport === "unavailable")

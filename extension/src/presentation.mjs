@@ -46,7 +46,10 @@ export class PresentationStore {
   }
   async restore() {
     const value = (await this.storage.get("vocabulary")).vocabulary;
-    if (value === undefined) return "original";
+    if (value === undefined) {
+      this.current = undefined;
+      return "original";
+    }
     try {
       this.current = validateVocabulary(value);
       return "loaded";
