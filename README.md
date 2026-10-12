@@ -4,7 +4,7 @@ A Windows desktop workspace and opt-in Edge/Chrome extension for project documen
 
 ## Current status
 
-The reviewed architecture and interface specification are recorded in [design/foundation.md](design/foundation.md). The reviewed native core and bounded Qt workspace are integrated. Local native-only build/package checks and three desktop capture states passed; combined packaging, browser review delivery and full visual acceptance remain in progress. This repository does not yet provide a verified installable product.
+The reviewed architecture and interface specification are recorded in [design/foundation.md](design/foundation.md). The reviewed native core, bounded Qt workspace and browser foundation are integrated. Local native-only build/package checks and three desktop capture states passed; combined packaging, browser review delivery and full visual acceptance remain in progress. This repository does not yet provide a verified installable product.
 
 The native desktop uses C++20 and Qt Quick/QML with local SQLite records. The browser extension uses Manifest V3, TypeScript, Lit and bundled Material Web controls. Each project is enabled separately by HTTPS origin and path. Page adapters describe allowlisted data and actions.
 
