@@ -81,7 +81,7 @@ ApplicationWindow {
      Label { text: "廣東話幽默：" + workspace.settings.cantoneseHumor }
      Slider { from: 1; to: 5; stepSize: 1; value: workspace.settings.cantoneseHumor; onMoved: workspace.setSetting("cantoneseHumor",value); Accessible.name: shell.tr("Cantonese humor", "廣東話幽默") }
      Button { text: shell.tr("Reset Cantonese humor", "重設廣東話幽默"); onClicked: workspace.setSetting("cantoneseHumor",5) }
-     Label { text: {const settings=workspace.settings;return workspace.humorCopy()}; wrapMode: Text.Wrap; Layout.fillWidth: true }
+     Label { text: {const settings=workspace.settings;return workspace.humorCopy()} wrapMode: Text.Wrap; Layout.fillWidth: true }
      Button { text: shell.tr("Load local vocabulary JSON", "載入本機用語 JSON"); onClicked: vocabularyPicker.open() }
      Button { text: shell.tr("Restore original wording", "還原原有用語"); enabled: workspace.settings.vocabularyLoaded; onClicked: workspace.clearVocabulary() }
      Label { text: shell.tr("Display wording is session-only. It never changes operation records or browser page content.", "顯示用語只適用於本次使用，不會更改操作紀錄或瀏覽器網頁內容。"); wrapMode: Text.Wrap; Layout.fillWidth: true }
