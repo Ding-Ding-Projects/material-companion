@@ -19,7 +19,15 @@ QVariantList Workspace::projects()const{return m_projects;}
 QVariantList Workspace::operations()const{
  return m_operations;
 }
-void Workspace::refreshOperations(){ if(m_core)m_operations=m_core->listJobs().toVariantList(); }
+void Workspace::refreshOperations(){
+ if(!m_core)return;
+ QVariantList records;
+ for(int offset=0;offset<=1000000;offset+=1000){
+  const auto page=m_core->listJobs(1000,offset);records.append(page.toVariantList());
+  if(page.size()<1000)break;
+ }
+ m_operations=records;
+}
 void Workspace::failure(QString operation){
  QString reason="native-validation-or-store-unavailable";
  const QStringList safe={"store-unavailable","request-fields","missing-request-field","request-field-type","grant-generation","field-bound","text-bound","unsupported-action-binding","outside-scope","project-bound","review-lifetime","grant-stale","request-digest-mismatch","request-stale","review-invalid","review-consumed","execution-digest-mismatch","execution-state","execution-grant-stale","accept-rejected"};
