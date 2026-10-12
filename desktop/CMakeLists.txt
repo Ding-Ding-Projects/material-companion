@@ -1,4 +1,6 @@
 find_package(Qt6 6.8 REQUIRED COMPONENTS Quick QuickControls2 Sql)
+set(CMAKE_AUTOMOC ON)
+qt_policy(SET QTP0001 NEW)
 qt_add_executable(material-companion WIN32 main.cpp workspace.cpp workspace.h)
 qt_add_qml_module(material-companion URI Companion VERSION 1.0 QML_FILES qml/Main.qml qml/CareField.qml)
 target_link_libraries(material-companion PRIVATE companion-core Qt6::Quick Qt6::QuickControls2 Qt6::Sql)
