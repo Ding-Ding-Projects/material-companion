@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "material-system-care",
+  "name": "Material System Care",
+  "adapterVersion": "1.0.0",
+  "scope": {
+    "origin": "https://ding-ding-projects.github.io",
+    "path": "/material-system-care/"
+  },
+  "capabilities": ["text.inspect", "native.text.sha256"],
+  "surfaces": [
+    {
+      "id": "maintenance.workspace",
+      "route": "/material-system-care/",
+      "owner": "material-system-care",
+      "state": "ready",
+      "revision": 1,
+      "elements": [
+        {
+          "id": "maintenance.summary",
+          "role": "text",
+          "label": "Maintenance summary",
+          "value": "No operation selected",
+          "state": "ready",
+          "help": "Summary of the selected local maintenance record.",
+          "actions": ["summary.length"]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "summary.length",
+      "label": "Count summary",
+      "effect": "local",
+      "input": { "type": "text", "maxLength": 2048 },
+      "reviewRequired": false,
+      "cancellable": false,
+      "retryable": true
+    },
+    {
+      "id": "text.sha256",
+      "label": "Review text digest",
+      "effect": "native",
+      "input": { "type": "text", "maxLength": 8192 },
+      "requiredGrant": "native.text.sha256",
+      "reviewRequired": true,
+      "cancellable": true,
+      "retryable": false
+    }
+  ]
+}
