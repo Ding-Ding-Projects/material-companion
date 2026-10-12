@@ -3,6 +3,8 @@
 #include <QCoreApplication>
 #include <QTemporaryDir>
 #include <QThread>
+#include <QFile>
+#include <QSqlQuery>
 #include <cstdio>
 #include <stdexcept>
 static int count=0;
@@ -39,12 +41,22 @@ int main(int argc,char **argv) {
    auto expired=core.review(r,1); QThread::msleep(1100); rejects([&]{core.accept(r,expired);});
    auto rv=core.review(r); core.accept(r,rv); check(core.cancel("p1","r2")["state"]=="cancelled"); rejects([&]{core.execute(r);});
    r["requestId"]="r3"; auto rr=core.review(r); core.accept(r,rr);
+   { QSqlQuery fixture(QSqlDatabase::database(QSqlDatabase::connectionNames().last())); check(fixture.exec("UPDATE jobs SET state='running' WHERE request='r3'")); }
+   rejects([&]{Core overlapping(path);}); check(core.query("p1","r3")["state"]=="running");
+   { QSqlQuery fixture(QSqlDatabase::database(QSqlDatabase::connectionNames().last())); check(fixture.exec("UPDATE jobs SET state='accepted' WHERE request='r3'")); }
+   check(core.listJobs(1).size()==1); rejects([&]{core.listJobs(1001);});
    auto pendingRequest=r; pendingRequest["requestId"]="r4"; oldReview=core.review(pendingRequest);
   }
   {
-   Core core(path); check(core.query("p1","r1")["jobId"].toString()==job); check(core.query("p1","r3")["state"]=="accepted");
-   check(core.accept(r,"old-session")["state"]=="accepted");
+   Core core(path); check(core.query("p1","r1")["jobId"].toString()==job); check(core.query("p1","r3")["state"]=="interrupted");
+   check(core.query("p1","r3")["phase"]=="reviewed-input-unavailable-new-review-required");
+   check(core.accept(r,"old-session")["state"]=="interrupted"); rejects([&]{core.execute(r);});
    r["requestId"]="r4"; rejects([&]{core.accept(r,oldReview);});
+   auto review=core.review(r); core.accept(r,review); core.revoke("p1"); rejects([&]{core.execute(r);});
+   bool retained=false; for(const auto &entry:core.listJobs()) if(entry.toObject()["requestId"]=="r4") { retained=true; check(entry.toObject()["state"]=="cancelled"); check(entry.toObject()["phase"]=="revoked-before-execution-no-effects"); } check(retained);
+   // The test-only target releases its real lease. Production has no release
+   // API and Windows can prevent deletion of an actively held lock file.
+   core.releaseOwnershipForTest(); rejects([&]{core.listJobs();});
   }
   printf("PASS %d native contract assertions\n",count); return 0;
  } catch(const std::exception &e) { fprintf(stderr,"FAIL %s after %d assertions\n",e.what(),count); return 1; }

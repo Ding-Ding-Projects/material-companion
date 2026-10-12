@@ -32,6 +32,9 @@ service = subprocess.Popen([str(binary / 'companion-service.exe'), '--data-root'
 try:
     time.sleep(0.25)
     assert service.poll() is None, 'service startup unavailable or endpoint already owned'
+    duplicate = subprocess.run([str(binary / 'companion-service.exe'), '--data-root', temporary_store.name], env=env, creationflags=flags, capture_output=True, timeout=5)
+    assert duplicate.returncode != 0
+    assert service.poll() is None
     data = json.dumps({'method': 'query', 'request': {'projectId': 'fixture', 'requestId': 'absent'},
                        'version': 1}, sort_keys=True, separators=(',', ':')).encode()
     answer = call(frame(data))
@@ -42,7 +45,7 @@ try:
     invalid_submit = b'{"method":"submit","request":{},"version":1}'
     answer = call(frame(invalid_submit))
     assert json.loads(answer.stdout[4:])['state'] == 'rejected'
-    print('PASS 8 native host and live IPC assertions')
+    print('PASS 10 native host and live IPC assertions')
 finally:
     service.terminate()
     service.wait(timeout=5)
