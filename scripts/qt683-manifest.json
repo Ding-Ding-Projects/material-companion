@@ -1,0 +1,58 @@
+{
+  "metadataUrl": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/Updates.xml",
+  "architecture": "msvc2022_64",
+  "metadataSha256": "b3aaf7ad9c12edd792c1afbe675646fdafa83d9e00854109bf463d300778a21e",
+  "schemaVersion": 1,
+  "archives": [
+    {
+      "sha1": "ab0bd2551618f7128ef30c6d74fe45b6a76e2296",
+      "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/qt.qt6.683.win64_msvc2022_64/6.8.3-0-202503201308qtbase-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z",
+      "destination": ".",
+      "archive": "qtbase-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z"
+    },
+    {
+      "sha1": "8031f1b59a1e8083a9397e081dd2f98f38a5ecbf",
+      "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/qt.qt6.683.win64_msvc2022_64/6.8.3-0-202503201308qtsvg-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z",
+      "destination": ".",
+      "archive": "qtsvg-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z"
+    },
+    {
+      "sha1": "4cdeb696118342453b8562d88e154a54ca336812",
+      "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/qt.qt6.683.win64_msvc2022_64/6.8.3-0-202503201308qtdeclarative-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z",
+      "destination": ".",
+      "archive": "qtdeclarative-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z"
+    },
+    {
+      "sha1": "25956e4f72a3b054235a2c6a00c88ba7e7927971",
+      "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/qt.qt6.683.win64_msvc2022_64/6.8.3-0-202503201308qttools-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z",
+      "destination": ".",
+      "archive": "qttools-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z"
+    },
+    {
+      "sha1": "30199ad5c1325a28891f9f8a3f24908667b788f3",
+      "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/qt.qt6.683.win64_msvc2022_64/6.8.3-0-202503201308qttranslations-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z",
+      "destination": ".",
+      "archive": "qttranslations-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z"
+    },
+    {
+      "sha1": "ed4b767f545a10ffc77c55ae01f5ed06f0c8dae5",
+      "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/qt.qt6.683.win64_msvc2022_64/6.8.3-0-202503201308d3dcompiler_47-x64.7z",
+      "destination": "bin",
+      "archive": "d3dcompiler_47-x64.7z"
+    },
+    {
+      "sha1": "1b8731f29b29d7e4becc0792334791c665961865",
+      "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/qt.qt6.683.win64_msvc2022_64/6.8.3-0-202503201308opengl32sw-64-mesa_11_2_2-signed_sha256.7z",
+      "destination": "bin",
+      "archive": "opengl32sw-64-mesa_11_2_2-signed_sha256.7z"
+    },
+    {
+      "sha1": "cf277a9840e7b47a80f2413953282a2b60a32197",
+      "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/qt.qt6.683.addons.qtshadertools.win64_msvc2022_64/6.8.3-0-202503201308qtshadertools-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z",
+      "destination": ".",
+      "archive": "qtshadertools-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z"
+    }
+  ],
+  "packageVersion": "6.8.3-0-202503201308",
+  "qtVersion": "6.8.3"
+}
