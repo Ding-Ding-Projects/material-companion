@@ -1,0 +1,1 @@
+{"schemaVersion":1,"version":"0.1.0","target":"windows-x64","language":"C++20","qt":"6.8.3","components":["Core","Network","Sql"],"cmakeMinimum":"3.25","nuget":"6.11.1","squirrelWindows":"2.0.1","installerUnsigned":true,"freshMachineBootstrap":"incomplete","desktop":"conditional-separate-target"}

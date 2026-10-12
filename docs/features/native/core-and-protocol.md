@@ -1,0 +1,27 @@
+# Native core and protocol version 1
+
+The C++20 `companion-core` target uses Qt Core, Network and Sql. `companion::Core` owns a SQLite WAL database with FULL synchronous commits. Native workspace code enables exact project scopes, creates immutable reviews, accepts reviewed requests, executes bounded hashes, reads job records and requests cancellation. Browser messages cannot call those authorization APIs.
+
+The first implemented operation is `text.sha256` over at most 65,536 UTF-8 bytes of submitted data. It has no filesystem, process or network effects. The database retains request digests and output hashes, never submitted text. Execution needs the original request again and compares the full digest before changing state. There is no script, shell, arbitrary executable, QML or JavaScript action fallback.
+
+## Review and job identity
+
+Reviews bind every validated request field, including request/project identity, exact scope and candidate URL, adapter/action version, parameters, submitted-data identity/revision, top-level document/tab/frame identity and grant generation. Protocol version is fixed by versioned transport. This first action has no file grants because it accesses no files. A random native session and expiry bind review lifetime. Only native workspace code invokes `review` and `accept`. An untrusted page cannot supply a consent field.
+
+Acceptance takes `BEGIN IMMEDIATE`, checks current grants and review bindings, consumes the review and inserts the job/request mapping in one transaction. Replies follow commit. Identical retries return the recorded job, including after reconnect, while changed-digest retries and review reuse under a different ID are rejected. Tombstones are retained indefinitely; accepted retries older than 24 hours are rejected as stale. Historical query remains separate from acceptance. Unknown identifiers return `unknown`, not proof of nonexecution.
+
+Revocation uses the same serialized database boundary and increments the grant generation. Reviews become stale. Previously accepted work remains recorded; not-yet-executed work receives `cancellation-requested`. Hash execution rechecks current grant generation and exact scope. Explicit cancellation of pending work produces `cancelled`; a completed hash remains `succeeded`. No rollback or consequential exactly-once claim is made. Hashing is bounded and synchronous, so mid-hash interruption/cancellation is not offered.
+
+Before hashing, the running state and bounded journal phase commit. A restart changes in-flight records to `interrupted`; the service never silently executes them again. Submitted text is intentionally absent from recovery records, so reconciliation requires native workspace handling and original reviewed input. Generic `unknown`, `interrupted` and cancellation states must remain factual in UI.
+
+## Scope and framing
+
+`parseScope` validates suspicious raw path syntax before Qt URL normalization. It rejects encoded separators, encoded percent, dot segments, malformed escapes/UTF-8, repeated separators, credentials, trailing-dot hosts, non-HTTPS origins and wildcard hosts. Matching compares case-sensitive decoded path segments, normalized host and HTTPS port. Root grants are explicit. Query/fragment cannot enlarge path authority. Top-level document identity must come from browser APIs; this core cannot independently observe browser navigation.
+
+The wire envelope is `{method,request,version}` with version 1, method `hello`, `submit`, `query` or `cancel`, and a maximum 262,144-byte UTF-8 payload. Hello requires an empty request and discloses connection readiness separately from unavailable review transport. Canonical Qt compact JSON is mandatory byte-for-byte, sorted object keys at every level, no duplicate keys, whitespace or alternative numeric spellings. The versioned schemas document fields; runtime validation is authoritative and text limits additionally apply to UTF-8 byte count. Browser serializers must use the same representation.
+
+The messaging host accepts exactly the configured installed `chrome-extension://<32-character-id>/` origin. `MATERIAL_COMPANION_EXTENSION_ID` must be set by controlled per-user registration; absent or invalid values fail closed. Installation identity registration is not implemented in this unit. Stdio uses the browser's four-byte little-endian framing. Validated requests pass to a named pipe keyed by current-user SID. Qt's `UserAccessOption` supplies the current-user DACL; both ends also verify pipe ownership against the current process SID. Administrators/current-user hostile processes are outside this isolation boundary. Other-user isolation needs actual integration verification, not just source inspection.
+
+## Known gaps
+
+The standalone service responds to validated `submit` with `native-review-required`; it does not yet bridge browser requests into the native workspace review queue. Browser navigation proof, reviewed document invalidation, descriptor integration, scoped file grants, native registration, live IPC verification across users, cancellation/revocation concurrency stress, installer launch and runtime UI acceptance remain unverified or unimplemented. The separate desktop must consume these APIs rather than create another operation store. This bounded foundation does not satisfy the complete design proposal or broader product requirements. Local tests cover 34 core assertions and eight real host/framing/current-user IPC assertions; they use a disposable explicit service store and terminate only their owned process.
