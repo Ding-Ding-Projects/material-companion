@@ -34,7 +34,7 @@ try {
  $publisher=Start-Process -FilePath $SquirrelPath -ArgumentList @('--releasify',('"'+$package+'"'),'--releaseDir',('"'+$out+'"'),'--no-msi') -WindowStyle Hidden -PassThru -Wait
  if($publisher.ExitCode -ne 0) { exit $publisher.ExitCode }
  foreach($file in @('Setup.exe','RELEASES','MaterialCompanion-0.1.0-full.nupkg')) { if(-not(Test-Path (Join-Path $out $file))) { throw ('Missing installer output: '+$file) } }
- $files=Get-ChildItem $out -File | ForEach-Object { @{file=$_.Name;bytes=$_.Length;sha256=(FileHash $_.FullName)} }
+ $files=Get-ChildItem $out -File | Where-Object { $_.Name -ne 'installer-receipt.json' } | ForEach-Object { @{file=$_.Name;bytes=$_.Length;sha256=(FileHash $_.FullName)} }
  @{schemaVersion=1;sourceCommit=(& git -C $root rev-parse HEAD).Trim();unsigned=$true;runtimeVerified=$false;files=@($files)} | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $out 'installer-receipt.json') -Encoding UTF8
  Write-Host 'Unsigned Squirrel.Windows package created locally. Installation and runtime acceptance are unverified. No publication occurred.'
  exit 0
