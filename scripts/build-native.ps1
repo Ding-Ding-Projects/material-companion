@@ -20,7 +20,7 @@ try {
  $build=Join-Path $root 'build/native'; New-Item -ItemType Directory -Force $build | Out-Null
  $batch=Join-Path $build 'compile.cmd'
  $desktopOption=if($DesktopTests){'ON'}else{'OFF'}
- $lines=@('@echo off',('call "'+(Join-Path $vs 'VC/Auxiliary/Build/vcvars64.bat')+'" >nul'),'if errorlevel 1 exit /b %errorlevel%',('"'+$cmake+'" -S "'+$root+'" -B "'+$build+'" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCOMPANION_DESKTOP_TESTS='+$desktopOption+' -DCMAKE_PREFIX_PATH="'+$QtRoot+'"'),'if errorlevel 1 exit /b %errorlevel%',('"'+$cmake+'" --build "'+$build+'"'),'exit /b %errorlevel%')
+ $lines=@('@echo off',('call "'+(Join-Path $vs 'VC/Auxiliary/Build/vcvars64.bat')+'" >nul'),'if errorlevel 1 exit /b %errorlevel%',('"'+$cmake+'" -S "'+$root+'" -B "'+$build+'" -G Ninja "-UQt6*" "-UQT_*" -DCMAKE_BUILD_TYPE=Release -DCOMPANION_DESKTOP_TESTS='+$desktopOption+' -DCMAKE_PREFIX_PATH="'+$QtRoot+'"'),'if errorlevel 1 exit /b %errorlevel%',('"'+$cmake+'" --build "'+$build+'"'),'exit /b %errorlevel%')
  [IO.File]::WriteAllLines($batch,$lines)
  & $env:ComSpec /d /c $batch
  if($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
