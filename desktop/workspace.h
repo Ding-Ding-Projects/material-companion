@@ -15,7 +15,7 @@ class Workspace final : public QObject {
  Q_PROPERTY(bool busy READ busy NOTIFY changed)
  Q_PROPERTY(QString reviewSummary READ reviewSummary NOTIFY changed)
 public:
- explicit Workspace(QObject *parent=nullptr);
+ explicit Workspace(QObject *parent=nullptr, QString dataRoot={});
  QVariantList projects() const; QVariantList operations() const;
  QVariantMap settings() const; QString notice()const{return m_notice;}
  bool busy()const{return m_busy;} QString reviewSummary()const;
@@ -26,11 +26,13 @@ public:
  Q_INVOKABLE void dismissNotice(){m_notice.clear();emit changed();}
  Q_INVOKABLE void setSetting(QString key,QVariant value);
  Q_INVOKABLE QString label(QString en,QString zh)const;
+ Q_INVOKABLE QString humorCopy()const;
  Q_INVOKABLE void loadVocabulary(QUrl url); Q_INVOKABLE void clearVocabulary();
 signals: void changed();
 private:
- void notify(QString text); QSettings m_store;
- std::unique_ptr<companion::Core> m_core; QVariantList m_projects,m_jobs;
+ void notify(QString text); void refreshOperations(); void failure(QString operation);
+ QSettings m_store;
+ std::unique_ptr<companion::Core> m_core; QVariantList m_projects,m_operations;
  QJsonObject m_request; QString m_review,m_notice; bool m_busy=false;
  QHash<QString,QString> m_words;
 };

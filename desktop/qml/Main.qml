@@ -21,9 +21,9 @@ ApplicationWindow {
    Label { text: "Material Companion"; font.bold: true }
    Label { text: "0.1 foundation · Build date unavailable"; opacity: 0.65 }
    Item { Layout.fillWidth: true; Layout.fillHeight: true; DragHandler { onActiveChanged: if (active) shell.startSystemMove() } }
-   ToolButton { text: "−"; Accessible.name: "Minimize"; onClicked: shell.showMinimized() }
-   ToolButton { text: shell.visibility === Window.Maximized ? "❐" : "□"; Accessible.name: "Maximize or restore"; onClicked: shell.visibility === Window.Maximized ? shell.showNormal() : shell.showMaximized() }
-   ToolButton { text: "×"; Accessible.name: "Close"; onClicked: shell.close() }
+   ToolButton { text: "−"; Accessible.name: shell.tr("Minimize", "最小化"); onClicked: shell.showMinimized() }
+   ToolButton { text: shell.visibility === Window.Maximized ? "❐" : "□"; Accessible.name: shell.tr("Maximize or restore", "最大化或還原"); onClicked: shell.visibility === Window.Maximized ? shell.showNormal() : shell.showMaximized() }
+   ToolButton { text: "×"; Accessible.name: shell.tr("Close", "關閉"); onClicked: shell.close() }
   }
  }
  RowLayout { anchors.fill: parent; spacing: 0
@@ -62,7 +62,7 @@ ApplicationWindow {
      Label { text: shell.tr("Text stays in memory. History contains the digest, never the submitted content. Maximum 64 KiB UTF-8.", "文字只留在記憶體。紀錄只保存摘要，不保存輸入內容。UTF-8 上限為 64 KiB。"); wrapMode: Text.Wrap; Layout.fillWidth: true }
      TextArea { id: textInput; objectName: "tools.text"; placeholderText: shell.tr("Text to hash", "要雜湊的文字"); Layout.fillWidth: true; Layout.preferredHeight: 200; wrapMode: TextEdit.Wrap; selectByMouse: true; Accessible.name: placeholderText }
      RowLayout { Button { text: shell.tr("Clear text", "清除文字"); onClicked: { textInput.clear(); textInput.forceActiveFocus() } } Button { id: reviewButton; objectName: "review.prepare"; text: shell.tr("Review SHA-256", "檢視 SHA-256"); highlighted: true; enabled: !!shell.selectedProject && !workspace.busy; onClicked: workspace.prepare(shell.selectedProject,textInput.text) } }
-     BusyIndicator { running: workspace.busy; visible: running; Accessible.name: "Executing bounded SHA-256" }
+     BusyIndicator { running: workspace.busy; visible: running; Accessible.name: shell.tr("Executing bounded SHA-256", "正在執行有界 SHA-256") }
     }
     ColumnLayout { visible: shell.page === 2; Layout.fillWidth: true; Layout.margins: 24
      Label { visible: workspace.operations.length === 0; text: shell.tr("No accepted operations.", "尚未有獲接受操作。") }
@@ -72,15 +72,16 @@ ApplicationWindow {
     }
     ColumnLayout { visible: shell.page === 3; Layout.fillWidth: true; Layout.margins: 24
      Label { text: shell.tr("Language", "語言") }
-     ComboBox { model: ["English", "廣東話", "English / 廣東話"]; currentIndex: workspace.settings.language; onActivated: workspace.setSetting("language",currentIndex); Accessible.name: "Language" }
+     ComboBox { model: ["English", "廣東話", "English / 廣東話"]; currentIndex: workspace.settings.language; onActivated: workspace.setSetting("language",currentIndex); Accessible.name: shell.tr("Language", "語言") }
      Switch { text: shell.tr("Dark theme", "深色主題"); checked: workspace.settings.dark; onToggled: workspace.setSetting("dark",checked) }
      Switch { text: shell.tr("Reduced motion", "減少動畫"); checked: workspace.settings.reducedMotion; onToggled: workspace.setSetting("reducedMotion",checked) }
      Label { text: "English humor: " + workspace.settings.englishHumor }
-     Slider { from: 0; to: 10; stepSize: 1; value: workspace.settings.englishHumor; onMoved: workspace.setSetting("englishHumor",value); Accessible.name: "English humor" }
+     Slider { from: 1; to: 5; stepSize: 1; value: workspace.settings.englishHumor; onMoved: workspace.setSetting("englishHumor",value); Accessible.name: shell.tr("English humor", "英文幽默") }
+     Button { text: shell.tr("Reset English humor", "重設英文幽默"); onClicked: workspace.setSetting("englishHumor",5) }
      Label { text: "廣東話幽默：" + workspace.settings.cantoneseHumor }
-     Slider { from: 0; to: 10; stepSize: 1; value: workspace.settings.cantoneseHumor; onMoved: workspace.setSetting("cantoneseHumor",value); Accessible.name: "Cantonese humor" }
-     Label { text: workspace.settings.englishHumor > 0 && workspace.settings.language !== 1 ? "No cloud required. Your text has enough places to be already." : ""; wrapMode: Text.Wrap; Layout.fillWidth: true }
-     Label { text: workspace.settings.cantoneseHumor > 0 && workspace.settings.language !== 0 ? "文字留喺本機，唔使四圍去旅行。" : ""; wrapMode: Text.Wrap; Layout.fillWidth: true }
+     Slider { from: 1; to: 5; stepSize: 1; value: workspace.settings.cantoneseHumor; onMoved: workspace.setSetting("cantoneseHumor",value); Accessible.name: shell.tr("Cantonese humor", "廣東話幽默") }
+     Button { text: shell.tr("Reset Cantonese humor", "重設廣東話幽默"); onClicked: workspace.setSetting("cantoneseHumor",5) }
+     Label { text: {const settings=workspace.settings;return workspace.humorCopy()}; wrapMode: Text.Wrap; Layout.fillWidth: true }
      Button { text: shell.tr("Load local vocabulary JSON", "載入本機用語 JSON"); onClicked: vocabularyPicker.open() }
      Button { text: shell.tr("Restore original wording", "還原原有用語"); enabled: workspace.settings.vocabularyLoaded; onClicked: workspace.clearVocabulary() }
      Label { text: shell.tr("Display wording is session-only. It never changes operation records or browser page content.", "顯示用語只適用於本次使用，不會更改操作紀錄或瀏覽器網頁內容。"); wrapMode: Text.Wrap; Layout.fillWidth: true }
@@ -92,7 +93,8 @@ ApplicationWindow {
  footer: Pane { visible: workspace.notice.length > 0; objectName: "workspace.notifications"; RowLayout { anchors.fill: parent; Label { Layout.fillWidth: true; text: workspace.notice; wrapMode: Text.WrapAnywhere; Accessible.role: Accessible.AlertMessage } Button { text: shell.tr("Dismiss", "關閉"); onClicked: workspace.dismissNotice() } } opacity: 1; Behavior on opacity { NumberAnimation { duration: workspace.settings.reducedMotion ? 0 : 150 } } }
  Dialog { id: reviewDialog; objectName: "review.dialog"; anchors.centerIn: parent; width: Math.min(shell.width-80,640); modal: true; title: shell.tr("Review exact operation", "檢視實際操作"); closePolicy: Popup.CloseOnEscape; visible: workspace.reviewSummary.length > 0
   contentItem: ColumnLayout { Label { text: workspace.reviewSummary; wrapMode: Text.Wrap; Layout.fillWidth: true } RowLayout { Button { text: shell.tr("Cancel", "取消"); enabled: !workspace.busy; onClicked: workspace.dismissReview() } Button { text: shell.tr("Authorize this operation", "授權此操作"); highlighted: true; enabled: !workspace.busy; onClicked: workspace.authorize() } } }
-  onClosed: { workspace.dismissReview(); reviewButton.forceActiveFocus() }
+  onRejected: workspace.dismissReview()
+  onClosed: reviewButton.forceActiveFocus()
  }
  FileDialog { id: vocabularyPicker; nameFilters: ["JSON files (*.json)"]; onAccepted: workspace.loadVocabulary(selectedFile) }
 }

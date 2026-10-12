@@ -7,40 +7,54 @@
 #include <QUrl>
 #include <QUuid>
 #include <QTimer>
-Workspace::Workspace(QObject *parent):QObject(parent){
- auto path=QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation); QDir().mkpath(path);
+#include <stdexcept>
+Workspace::Workspace(QObject *parent, QString dataRoot):QObject(parent){
+ auto path=dataRoot.isEmpty()?QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation):dataRoot;
+ try { if(!QDir().mkpath(path))throw std::runtime_error("store-unavailable");
  m_core=std::make_unique<companion::Core>(path+"/operations.sqlite");
- m_projects=m_store.value("projects").toList(); m_jobs=m_store.value("jobs").toList();
+ m_projects=m_store.value("projects").toList();refreshOperations();
+ } catch(...) {m_core.reset();failure("Open local operation store");}
 }
 QVariantList Workspace::projects()const{return m_projects;}
 QVariantList Workspace::operations()const{
- QVariantList result;
- for(auto v:m_jobs){auto ids=v.toMap(); auto record=m_core->query(ids["projectId"].toString(),ids["requestId"].toString()).toVariantMap(); record.insert("projectId",ids["projectId"]); result.append(record);}
- return result;
+ return m_operations;
+}
+void Workspace::refreshOperations(){ if(m_core)m_operations=m_core->listJobs().toVariantList(); }
+void Workspace::failure(QString operation){
+ QString reason="native-validation-or-store-unavailable";
+ const QStringList safe={"store-unavailable","request-fields","missing-request-field","request-field-type","grant-generation","field-bound","text-bound","unsupported-action-binding","outside-scope","project-bound","review-lifetime","grant-stale","request-digest-mismatch","request-stale","review-invalid","review-consumed","execution-digest-mismatch","execution-state","execution-grant-stale","accept-rejected"};
+ if(std::current_exception()){try{std::rethrow_exception(std::current_exception());}catch(const std::exception &e){QString code=QString::fromUtf8(e.what());if(safe.contains(code))reason=code;}catch(...){}}
+ notify(operation+": "+reason+". No success is claimed; inspect durable operation history before retrying.");
 }
 QVariantMap Workspace::settings()const{
- return {{"language",m_store.value("language",0)},{"dark",m_store.value("dark",false)},{"reducedMotion",m_store.value("reducedMotion",true)},{"englishHumor",m_store.value("englishHumor",0)},{"cantoneseHumor",m_store.value("cantoneseHumor",0)},{"tab",m_store.value("tab",0)},{"vocabularyLoaded",!m_words.isEmpty()}};
+ return {{"language",m_store.value("language",0)},{"dark",m_store.value("dark",false)},{"reducedMotion",m_store.value("reducedMotion",true)},{"englishHumor",qBound(1,m_store.value("englishHumor",5).toInt(),5)},{"cantoneseHumor",qBound(1,m_store.value("cantoneseHumor",5).toInt(),5)},{"tab",m_store.value("tab",0)},{"vocabularyLoaded",!m_words.isEmpty()}};
 }
 void Workspace::notify(QString text){m_notice=text;emit changed();}
 void Workspace::createProject(QString name,QString scope){
+ try {if(!m_core){failure("Create project");return;}
  QUrl url(scope); name=name.trimmed();
  if(name.isEmpty()||name.size()>100||!url.isValid()||url.scheme()!="https"||url.host().isEmpty()||!url.userInfo().isEmpty()||url.hasQuery()||url.hasFragment()){notify("Enter a name and an exact HTTPS origin/path without credentials, query or fragment.");return;}
  auto id=QUuid::createUuid().toString(QUuid::WithoutBraces); m_core->enableProject(id,scope);
 
  m_projects.append(QVariantMap{{"id",id},{"name",name},{"scope",scope},{"generation",1},{"enabled",true}});
  m_store.setValue("projects",m_projects);notify("Project created with an explicit local grant.");
+ }catch(...){failure("Create project");}
 }
 void Workspace::revoke(QString project){
+ try {if(!m_core){failure("Revoke grant");return;}
  m_core->revoke(project); for(auto &v:m_projects){auto p=v.toMap();if(p["id"]==project){p["enabled"]=false;v=p;}}
  m_request={};m_review.clear();m_store.setValue("projects",m_projects);notify("Grant revoked. Pending review withdrawn.");
+ }catch(...){failure("Revoke grant");}
 }
 void Workspace::prepare(QString project,QString text){
+ try {if(!m_core){failure("Prepare review");return;}
  if(m_busy)return;
  if(text.toUtf8().size()>65536){notify("Text exceeds the 64 KiB limit.");return;}
  QVariantMap p;for(auto v:m_projects)if(v.toMap()["id"]==project)p=v.toMap();
  if(p.isEmpty()||!p["enabled"].toBool()){notify("Select a project with an active grant.");return;}
  m_request={{"requestId",QUuid::createUuid().toString(QUuid::WithoutBraces)},{"projectId",project},{"scope",p["scope"].toString()},{"url",p["scope"].toString()},{"adapterVersion","1"},{"actionId","text.sha256"},{"text",text},{"targetId","submitted-data"},{"targetRevision","1"},{"documentId","native-editor"},{"tabId","native-tools"},{"frameId","0"},{"grantGeneration",p["generation"].toInt()}};
  m_review=m_core->review(m_request);notify(m_review.isEmpty()?"Review rejected. Check grant and request conditions.":"Review prepared. Content stays in memory and is not stored in history.");
+ }catch(...){m_request={};m_review.clear();failure("Prepare review");}
 }
 QString Workspace::reviewSummary()const{
  if(m_review.isEmpty())return {};
@@ -48,19 +62,34 @@ QString Workspace::reviewSummary()const{
 }
 void Workspace::authorize(){
  if(m_busy||m_review.isEmpty())return;m_busy=true;emit changed();
- QTimer::singleShot(0,this,[this]{auto result=m_core->accept(m_request,m_review);
- if(!result["jobId"].toString().isEmpty()){m_jobs.append(QVariantMap{{"projectId",m_request["projectId"].toString()},{"requestId",m_request["requestId"].toString()}});m_store.setValue("jobs",m_jobs);}
- m_request={};m_review.clear();m_busy=false;notify(QJsonDocument(result).toJson(QJsonDocument::Compact));});
+ const auto request=m_request;const auto review=m_review;
+ QTimer::singleShot(0,this,[this,request,review]{
+ QString acceptedId;
+ try {if(!m_core)throw std::runtime_error("store-unavailable");
+ auto accepted=m_core->accept(request,review);acceptedId=accepted["jobId"].toString();
+ if(acceptedId.isEmpty())throw std::runtime_error("accept-rejected");
+ const auto result=m_core->execute(request);refreshOperations();
+ m_request={};m_review.clear();m_busy=false;
+ notify("Job "+acceptedId+": "+QJsonDocument(result).toJson(QJsonDocument::Compact));
+ }catch(...){m_request={};m_review.clear();m_busy=false;
+ try{refreshOperations();}catch(...){}
+ failure(acceptedId.isEmpty()?"Authorize operation":"Accepted job "+acceptedId+", execution outcome uncertain");}
+ });
 }
-void Workspace::dismissReview(){if(!m_busy){m_request={};m_review.clear();notify("Review dismissed. Nothing executed.");}}
+void Workspace::dismissReview(){if(!m_busy&&!m_review.isEmpty()){m_request={};m_review.clear();notify("Pending review dismissed. Nothing executed by this review.");}}
 void Workspace::setSetting(QString key,QVariant value){
- if(key=="language"||key=="tab"||key=="englishHumor"||key=="cantoneseHumor"){int n=value.toInt();if(n<0||n>(key=="language"?2:key=="tab"?4:10))return;value=n;}
+ if(key=="language"||key=="tab"||key=="englishHumor"||key=="cantoneseHumor"){int n=value.toInt();bool humor=key.endsWith("Humor");if(n<(humor?1:0)||n>(key=="language"?2:key=="tab"?4:5))return;value=n;}
  else if(key=="dark"||key=="reducedMotion")value=value.toBool();else return;
  m_store.setValue(key,value);emit changed();
 }
 QString Workspace::label(QString en,QString zh)const{
  QString out;int language=m_store.value("language",0).toInt();out=language==1?zh:language==2?en+" / "+zh:en;
  for(auto it=m_words.cbegin();it!=m_words.cend();++it)out.replace(it.key(),it.value());return out;
+}
+QString Workspace::humorCopy()const{
+ const QStringList en={"Text remains local.","Text remains local. No travel itinerary needed.","Text remains local. The cloud can take a break.","Text remains local. It already has a perfectly good chair here.","Text remains local. Sending it sightseeing would only create paperwork."};
+ const QStringList zh={"文字留在本機。","文字留喺本機，唔使訂車票。","文字留喺本機，雲端可以休息。","文字留喺本機，呢度已經有張好椅。","文字留喺本機，送佢去旅行只會多咗手續。"};
+ return label(en[settings()["englishHumor"].toInt()-1],zh[settings()["cantoneseHumor"].toInt()-1]);
 }
 void Workspace::loadVocabulary(QUrl url){
  QFile f(url.toLocalFile());if(!url.isLocalFile()||!f.open(QIODevice::ReadOnly)||f.size()>262144){notify("Vocabulary file unavailable or too large.");return;}
