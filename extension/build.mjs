@@ -1,10 +1,12 @@
 import { build } from "esbuild";
-import { mkdir, copyFile, writeFile } from "node:fs/promises";
+import { copyFile, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
-await mkdir("dist", { recursive: true });
+import { join } from "node:path";
+import { createOutputStage, publishOutput } from "./output.mjs";
+const stage = await createOutputStage(process.cwd());
 await build({
   entryPoints: ["src/workspace.ts", "src/background.ts"],
-  outdir: "dist",
+  outdir: stage,
   bundle: true,
   format: "esm",
   target: "chrome120",
@@ -12,9 +14,9 @@ await build({
   legalComments: "eof",
 });
 for (const name of ["manifest.json", "workspace.html"])
-  await copyFile(name, `dist/${name}`);
+  await copyFile(name, join(stage, name));
 await writeFile(
-  "dist/build.json",
+  join(stage, "build.json"),
   JSON.stringify({
     version: "0.1.0",
     builtAt: new Date().toISOString(),
@@ -23,4 +25,5 @@ await writeFile(
     }).trim(),
   }),
 );
+await publishOutput(process.cwd(), stage);
 console.log("Extension built: dist (unpacked Manifest V3 package)");

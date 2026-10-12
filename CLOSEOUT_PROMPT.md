@@ -11,3 +11,7 @@ Source-only integration is distinct from delivery. Keep the public product ident
 Browser source 0b3053e4c472018eb3d77a1343cd15f18b78f6c8 is integrated after independent review and 25 focused checks. Its actual isolated browser runtime and connected native workflow remain pending. The exact root build now invokes the extension producer, emitting unpacked output and a ZIP with frozen source/input hashes. Missing Node acquisition remains a bootstrap gap.
 
 Combined native/desktop main8dbc7f2 passed its root build and both CTest targets. The local Squirrel package produced at that source contains only the native service and messaging host, as its package description states; it does not include the desktop shell or host registration. Complete desktop packaging and installer runtime remain incomplete.
+
+## Extension output repair
+
+The root build reproduced an obsolete ignored sentinel inside the extension ZIP. Fresh staging now requires the exact five output files and preserves the prior output directory before switching. Four focused regressions pass; the exact repaired root producer and ZIP readback are the next verification step. This repairs output provenance without claiming browser runtime acceptance.
