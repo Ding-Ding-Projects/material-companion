@@ -8,7 +8,7 @@
 #include <QUuid>
 #include <QTimer>
 #include <stdexcept>
-Workspace::Workspace(QObject *parent, QString dataRoot):QObject(parent){
+Workspace::Workspace(QObject *parent, QString dataRoot):QObject(parent),m_store((dataRoot.isEmpty()?QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation):dataRoot)+"/settings.ini",QSettings::IniFormat){
  auto path=dataRoot.isEmpty()?QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation):dataRoot;
  try { if(!QDir().mkpath(path))throw std::runtime_error("store-unavailable");
  m_core=std::make_unique<companion::Core>(path+"/operations.sqlite");

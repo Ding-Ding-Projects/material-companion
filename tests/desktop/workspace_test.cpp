@@ -20,7 +20,7 @@ private slots:
    const auto outcome=w.notice();w.dismissReview();QCOMPARE(w.notice(),outcome);
    w.prepare(id,"abc");w.revoke(id);const auto revoked=w.notice();w.dismissReview();QCOMPARE(w.notice(),revoked);
   }
-  QSettings().clear();Workspace reopened(nullptr,root.path());QCOMPARE(reopened.operations().size(),1);
+  QVERIFY(QFile::remove(root.path()+"/settings.ini"));Workspace reopened(nullptr,root.path());QCOMPARE(reopened.operations().size(),1);
  }
  void caughtValidationAndStoreFailure(){
   QTemporaryDir root;QSettings().clear();Workspace w(nullptr,root.path());
