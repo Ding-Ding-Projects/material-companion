@@ -165,3 +165,9 @@ test("background navigation invalidates native document and hello cannot imply a
   );
   assert.equal(h.outgoing.length, 1);
 });
+test("incompatible native protocol keeps its reason after disconnect", async () => {
+  const h = host();
+  await h.send({ type: "native-connect" });
+  h.events.nativeMessage({ version: 2, state: "ready" });
+  assert.equal((await h.send({ type: "native-state" })).state, "incompatible");
+});

@@ -188,3 +188,12 @@ test("nonstandard origin ports and absent native grant inventory are rejected", 
   p.capabilities = [];
   assert.throws(() => validateProject(p));
 });
+test("portable schema retains all four strict versioned descriptor definitions", async () => {
+  const schema = JSON.parse(await readFile(new URL("../../adapter-kit/descriptors.schema.json", import.meta.url), "utf8"));
+  assert.equal(schema.$ref, "#/$defs/ProjectDescriptor");
+  for (const name of ["ProjectDescriptor", "SurfaceDescriptor", "ElementDescriptor", "ActionDescriptor"]) {
+    assert.equal(schema.$defs[name].additionalProperties, false);
+    assert.ok(schema.$defs[name].required.includes("id"));
+  }
+  assert.equal(schema.$defs.ProjectDescriptor.properties.schemaVersion.const, 1);
+});

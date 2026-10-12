@@ -29,34 +29,40 @@ async function active() {
   return (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
 }
 function connect() {
+  if (nativePort) nativePort.disconnect();
   nativeState = "connecting";
   reviewTransport = "unavailable";
   try {
-    nativePort = chrome.runtime.connectNative(HOST);
-    nativePort.onMessage.addListener((reply) => {
+    const port = chrome.runtime.connectNative(HOST);
+    nativePort = port;
+    port.onMessage.addListener((reply) => {
+      if (nativePort !== port) return;
       if (reply?.version !== 1) {
         nativeState = "incompatible";
-        nativePort?.disconnect();
+        port.disconnect();
         return;
       }
-      nativeState =
-        reply.state === "ready" ? "ready" : (reply.state ?? "rejected");
-      reviewTransport = reply.reviewTransport ?? "unavailable";
+      if (nativeState === "connecting") {
+        nativeState = reply.state === "ready" ? "ready" : "rejected";
+        reviewTransport = reply.reviewTransport ?? "unavailable";
+      }
       const id = reply.requestId;
       if (typeof id === "string") {
         pending.get(id)?.(reply);
         pending.delete(id);
       }
     });
-    nativePort.onDisconnect.addListener(() => {
-      nativeState = chrome.runtime.lastError ? "absent" : "disconnected";
+    port.onDisconnect.addListener(() => {
+      if (nativePort !== port) return;
+      if (nativeState !== "incompatible" && nativeState !== "rejected")
+        nativeState = chrome.runtime.lastError ? "absent" : "disconnected";
       nativePort = undefined;
       reviewTransport = "unavailable";
       for (const resolve of pending.values())
         resolve({ version: 1, state: nativeState });
       pending.clear();
     });
-    nativePort.postMessage({ method: "hello", request: {}, version: 1 });
+    port.postMessage({ method: "hello", request: {}, version: 1 });
   } catch {
     nativeState = "absent";
   }
