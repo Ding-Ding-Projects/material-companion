@@ -1,0 +1,12 @@
+{
+ "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:material-companion:native-request:1",
+ "type":"object","additionalProperties":false,
+ "required":["requestId","projectId","scope","url","adapterVersion","actionId","text","targetId","targetRevision","documentId","tabId","frameId","grantGeneration"],
+ "properties":{
+  "requestId":{"type":"string","minLength":1,"maxLength":2048},"projectId":{"type":"string","minLength":1,"maxLength":2048},
+  "scope":{"type":"string","minLength":1,"maxLength":2048},"url":{"type":"string","minLength":1,"maxLength":2048},
+  "adapterVersion":{"const":"1"},"actionId":{"const":"text.sha256"},"text":{"type":"string","minLength":1,"maxLength":65536},
+  "targetId":{"const":"submitted-data"},"targetRevision":{"const":"1"},"documentId":{"type":"string","minLength":1,"maxLength":2048},
+  "tabId":{"type":"string","minLength":1,"maxLength":2048},"frameId":{"const":"0"},"grantGeneration":{"type":"integer","minimum":1,"maximum":2147483647}
+ }
+}

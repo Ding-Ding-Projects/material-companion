@@ -1,0 +1,11 @@
+{
+ "$schema":"https://json-schema.org/draft/2020-12/schema",
+ "$id":"urn:material-companion:native-envelope:1",
+ "type":"object","additionalProperties":false,"required":["method","request","version"],
+ "properties":{"version":{"const":1},"method":{"enum":["hello","submit","query","cancel"]},"request":{"type":"object"}},
+ "allOf":[
+  {"if":{"properties":{"method":{"const":"hello"}}},"then":{"properties":{"request":{"maxProperties":0}}}},
+  {"if":{"properties":{"method":{"const":"submit"}}},"then":{"properties":{"request":{"$ref":"native-request-v1.schema.json"}}}},
+  {"if":{"properties":{"method":{"enum":["query","cancel"]}}},"then":{"properties":{"request":{"type":"object","additionalProperties":false,"required":["projectId","requestId"],"properties":{"projectId":{"type":"string","minLength":1,"maxLength":2048},"requestId":{"type":"string","minLength":1,"maxLength":2048}}}}}}
+ ]
+}
