@@ -146,3 +146,29 @@ test("Cancel falls back to the newest remaining active count after a later count
   );
   assert.equal(instance.abort, undefined);
 });
+test("completed outcome wins coherently while terminal persistence acknowledgment is held", async () => {
+  const { instance, timers } = view();
+  let release;
+  const ack = new Promise((r) => {
+    release = r;
+  });
+  instance.persistOperation = async (operation) => {
+    instance.operations = instance.operations
+      .filter((o) => o.id !== operation.id)
+      .concat(operation);
+    if (operation.state === "completed") await ack;
+  };
+  const count = instance.countText();
+  const originalController = instance.abort;
+  await new Promise((r) => setImmediate(r));
+  timers.shift()();
+  await new Promise((r) => setImmediate(r));
+  assert.equal(instance.operations[0].state, "completed");
+  assert.equal(instance.abort, undefined);
+  originalController.abort();
+  release();
+  await count;
+  assert.equal(instance.operations[0].state, "completed");
+  assert.equal(instance.notice, "Text count completed.");
+  assert.match(instance.toolResult, /Characters: 7/);
+});

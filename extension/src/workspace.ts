@@ -462,11 +462,11 @@ export class CompanionWorkspace extends LitElement {
     await this.persistOperation(op);
     await new Promise((r) => setTimeout(r, 50));
     const finalState = controller.signal.aborted ? "cancelled" : "completed";
-    await this.persistOperation({ ...op, state: finalState });
     this.textControllers.delete(op.id);
     this.abort = [...this.textControllers.values()].at(-1);
+    await this.persistOperation({ ...op, state: finalState });
     if (this.latestTextOperation !== op.id) return;
-    if (controller.signal.aborted) {
+    if (finalState === "cancelled") {
       this.notice = "Local operation cancelled.";
     } else {
       this.toolResult = `Characters: ${Array.from(text).length}\nWords: ${text.trim() ? text.trim().split(/\s+/u).length : 0}\nLines: ${text.split(/\r?\n/).length}`;
