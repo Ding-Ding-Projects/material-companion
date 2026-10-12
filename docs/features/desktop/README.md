@@ -29,8 +29,16 @@ Material Controls supplies baseline focus and interaction behavior. The implemen
 
 ## Verification and remaining acceptance
 
-Focused Qt tests are available with `COMPANION_DESKTOP_TESTS=ON`: real digest execution, native history after settings removal/restart, outcome preservation, invalid review/store exception handling, and independent humor/language behavior. These tests remain unrun until the exact root `build.bat` builds the integrated source. Packaged launch, genuine hidden-desktop captures, native bounds/focus/accessibility probes and the normal/minimum, three-language, theme and scaling matrix remain unverified until actual receipts are recorded.
+Focused Qt tests are available with `COMPANION_DESKTOP_TESTS=ON`: real digest execution, native history after settings removal/restart, outcome preservation, invalid review/store exception handling, independent humor/language behavior and local wording valid/invalid/reset behavior.
+
+Candidate `2cb3f97a81a86520eb924b2507fe99a865d271d5` built through the exact root `build.bat` with desktop tests enabled using a complete Qt 6.8.3 MSVC toolchain. Build exit was 0. CTest passed the desktop target (1/1). The explicit QtTest report recorded 5 passed, 0 failed, 0 skipped (three behavioral methods plus initialization and cleanup).
+
+The built desktop executable SHA-256 was `4c6fe0e6ae6912881c3b79fb2dfc9cee8bb1671dd6b92cb45539981ca2a5dc13`. It was launched on a named hidden desktop through the installed direct cheap CLI with an explicit isolated data root. Inspected real 1440 × 960, 96-DPI captures showed the initial empty project workspace, the settings destination and dark settings. Background input changed the destination and theme; the isolated settings file independently recorded those changes. The owned process exited through its title-bar close action and the named desktop was subsequently absent. The HTTP capture helper endpoint was unavailable, so this run does not claim an HTTP-helper receipt. Raw captures are retained locally pending complete evidence promotion, not published as accepted inventory entries.
+
+Packaged launch, native bounds/focus/accessibility probes, UI-driven hashing, notification ordering, the normal/minimum three-language/theme/scaling matrix, and formal capture promotion remain unverified. Local backend tests and three inspected frames do not establish those wider acceptance criteria.
 
 The combined native/desktop candidate `68712eb7df9162115adeeed4f0639d76ed80acb7` was attempted through root `build.bat` with desktop tests enabled. Configuration stopped because the selected Qt 6.8.3 MSVC cache lacked `Qt6QuickConfig.cmake`. This proves a missing build dependency, not a desktop compiler or test verdict. A supported complete Qt Quick toolchain is required before the same candidate can be compiled and inspected.
+
+That historical toolchain blocker was resolved for the later candidate above. The original missing-module result remains historical evidence and is not relabeled as a passing build.
 
 Browser connection is truthfully disconnected. Browser pending reviews are not delivered into this native UI yet. Full appearance editing, locks, search/regex builders, bulk operations, export, persistent tab arrangements, notification history, model tools, file conversion, server tools and authenticated status reporting are not implemented by this foundation. They remain required delivery gaps, not disabled capabilities counted as complete.
