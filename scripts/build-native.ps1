@@ -1,11 +1,17 @@
 param([string]$QtRoot,[switch]$Silent,[switch]$DesktopTests,[switch]$AllowDirtySource,[Parameter(ValueFromRemainingArguments=$true)][string[]]$Rest)
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'source-snapshot.ps1')
+. (Join-Path $PSScriptRoot 'ensure-qt.ps1')
 try {
  $root=Split-Path $PSScriptRoot -Parent
  $snapshot=Get-SourceSnapshot $root ([bool]$AllowDirtySource)
  if(-not $QtRoot) { $QtRoot=$env:MATERIAL_COMPANION_QT_ROOT }
- if(-not $QtRoot -or -not(Test-Path -LiteralPath (Join-Path $QtRoot 'lib/cmake/Qt6/Qt6Config.cmake'))) { throw 'Qt 6.8.3 MSVC x64 is required. Supply -QtRoot or MATERIAL_COMPANION_QT_ROOT. No cache is modified.' }
+ $qtComponents=@('Core','Network','Sql'); if(Test-Path (Join-Path $root 'desktop/CMakeLists.txt')) { $qtComponents+=@('Quick','QuickControls2','ShaderTools'); if($DesktopTests) { $qtComponents+='Test' } }
+ $qtUsable=[bool]$QtRoot
+ if($qtUsable) { foreach($component in $qtComponents) { if(-not(Test-Path -LiteralPath (Join-Path $QtRoot ('lib/cmake/Qt6'+$component+'/Qt6'+$component+'Config.cmake')))) { $qtUsable=$false } } }
+ if(-not $qtUsable) { Write-Host 'The selected read-only Qt cache is absent or lacks required modules. Acquiring the complete pinned project-owned cache.'; $QtRoot=Ensure-Qt683 }
+ $versionConfig=Get-Content -LiteralPath (Join-Path $QtRoot 'lib/cmake/Qt6/Qt6ConfigVersionImpl.cmake') -Raw
+ if($versionConfig -notmatch 'PACKAGE_VERSION "6\.8\.3"') { throw 'The selected Qt cache is not the pinned 6.8.3 version.' }
  $vswhere=Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
  if(-not(Test-Path $vswhere)) { throw 'MSVC discovery requires official vswhere. Fresh-machine bootstrap is not yet implemented.' }
  $vs=& $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
