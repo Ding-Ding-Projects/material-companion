@@ -10,6 +10,51 @@ function Assert-QtCache([string]$Destination,$Receipt,$Manifest) {
  if(($actual -join "`n") -ne ($declared -join "`n")) { throw 'Qt cache inventory is missing, duplicate or contains unexpected files.' }
  foreach($file in $Receipt.files) { Assert-SafeQtMember $file.file; $path=Join-Path $Destination $file.file; if((FileHash $path) -ne $file.sha256) { throw ('Qt cache file changed: '+$file.file) } }
 }
+
+function Find-QtArchiveTool([string]$CacheRoot) {
+ $candidates=@()
+ $command=Get-Command 7z.exe -ErrorAction SilentlyContinue
+ if($command) { $candidates+=$command.Source }
+ foreach($base in @($env:ProgramFiles,${env:ProgramFiles(x86)})) {
+  if($base) { $candidates+=(Join-Path $base '7-Zip/7z.exe') }
+ }
+ foreach($candidate in ($candidates | Select-Object -Unique)) {
+  if(-not(Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+  $capabilities=(& $candidate i 2>$null) -join "`n"
+  if($LASTEXITCODE -eq 0 -and $capabilities -match '7-Zip(?: \([^)]*\))? ([0-9]+\.[0-9]+)' -and [version]$Matches[1] -ge [version]'25.01' -and $capabilities -match '\bLZMA\b') { return $candidate }
+ }
+ # Official release asset digest, checked before any executable invocation.
+ $tools=Join-Path $CacheRoot 'tools'; New-Item -ItemType Directory -Force $tools | Out-Null
+ $portable=Join-Path $tools '7zr-26.04.exe'
+ $expected='256feca8e274e5da655e2a284fabafd9f554365eb164862089dacd4e8276d282'
+ if(-not(Test-Path -LiteralPath $portable) -or (FileHash $portable) -ne $expected) {
+  $download=$portable+'.download'
+  Invoke-WebRequest -UseBasicParsing 'https://github.com/ip7z/7zip/releases/download/26.04/7zr.exe' -OutFile $download
+  if((FileHash $download) -ne $expected) { throw 'Pinned 7-Zip portable archive tool checksum mismatch.' }
+  Move-Item -LiteralPath $download -Destination $portable -Force
+ }
+ return $portable
+}
+function Assert-QtArchiveListing([string[]]$Listing) {
+ $members=0
+ foreach($record in (($Listing -join "`n") -split '\r?\n\s*\r?\n')) {
+  if(-not $record.Trim()) { continue }
+  $fields=@{}
+  foreach($line in ($record -split '\r?\n')) {
+   if($line -notmatch '^([^=]+) = (.*)$') { throw 'Unrecognized Qt archive member listing.' }
+   $key=$Matches[1]; $value=$Matches[2]
+   if($fields.ContainsKey($key)) { throw 'Duplicate Qt archive member metadata.' }
+   $fields[$key]=$value
+  }
+  if(-not $fields.ContainsKey('Path') -or -not $fields.ContainsKey('Attributes')) { throw 'Incomplete Qt archive member listing.' }
+  Assert-SafeQtMember $fields.Path
+  if($fields.Path -match '[:\x00-\x1f]' -or $fields.Path -match '(^|[/\\])\.([/\\]|$)') { throw 'Unsafe Qt archive member syntax.' }
+  if($fields.ContainsKey('Symbolic Link') -or $fields.ContainsKey('Hard Link') -or $fields.ContainsKey('Reparse') -or $fields.Attributes -match '(^|\s)l|\bReparse\b') { throw 'Qt archive link members are not supported.' }
+  $members++
+ }
+ if($members -eq 0) { throw 'Qt archive member listing is empty.' }
+}
+
 function Ensure-Qt683([string]$Root) {
  if(-not $Root) { $Root=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MaterialCompanion/toolchain/Qt' }
  $Root=[IO.Path]::GetFullPath($Root); New-Item -ItemType Directory -Force $Root | Out-Null
@@ -22,7 +67,7 @@ function Ensure-Qt683([string]$Root) {
   return $destination
  }
  if(Test-Path -LiteralPath $destination) { throw 'An unverified Qt destination already exists; it was retained and will not be overwritten.' }
- $tar=(Get-Command tar.exe -ErrorAction Stop).Source
+ $archiveTool=Find-QtArchiveTool $Root
  $downloads=Join-Path $Root 'downloads'; New-Item -ItemType Directory -Force $downloads | Out-Null
  $metadata=Join-Path $downloads 'Updates.xml'
  if(-not(Test-Path $metadata) -or (FileHash $metadata) -ne $manifest.metadataSha256) { Invoke-WebRequest -UseBasicParsing $manifest.metadataUrl -OutFile ($metadata+'.download'); if((FileHash ($metadata+'.download')) -ne $manifest.metadataSha256) { throw 'Official Qt metadata differs from the pinned reviewed version.' }; Move-Item -LiteralPath ($metadata+'.download') -Destination $metadata -Force }
@@ -40,11 +85,10 @@ function Ensure-Qt683([string]$Root) {
    if((ArchiveSha1 ($archive+'.download')) -ne $item.sha1) { throw ('Official Qt archive checksum mismatch: '+$item.archive) }
    Move-Item -LiteralPath ($archive+'.download') -Destination $archive -Force
   }
-  $entries=@(& $tar -tf $archive); if($LASTEXITCODE -ne 0) { throw 'Qt archive listing failed.' }
-  foreach($entry in $entries) { Assert-SafeQtMember $entry }
-  $details=@(& $tar -tvf $archive); if($LASTEXITCODE -ne 0 -or ($details | Where-Object { $_ -match '^[lh]' })) { throw 'Qt archive link members are not supported.' }
+  $entries=@(& $archiveTool l -slt -ba -- $archive); if($LASTEXITCODE -ne 0) { throw 'Qt archive listing failed.' }
+  Assert-QtArchiveListing $entries
   $output=Join-Path $stage $item.destination; New-Item -ItemType Directory -Force $output | Out-Null
-  & $tar -xf $archive -C $output; if($LASTEXITCODE -ne 0) { throw ('Qt archive extraction failed: '+$item.archive) }
+  & $archiveTool x -y -bd -bb0 ('-o'+$output) -- $archive | Out-Null; if($LASTEXITCODE -ne 0) { throw ('Qt archive extraction failed: '+$item.archive) }
   $archiveRows+=@{archive=$item.archive;url=$item.url;sha1=$item.sha1;sha256=(FileHash $archive);bytes=(Get-Item $archive).Length}
  }
  "[Paths]`nPrefix=..`n" | Set-Content -LiteralPath (Join-Path $stage 'bin/qt.conf') -Encoding ASCII

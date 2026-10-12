@@ -25,3 +25,7 @@ The delivery lane reuses the existing reviewed documentation design and full art
 The installer work is explicitly handed to the next implementation session. Read [the installer continuation handoff](docs/features/release/installer-handoff.md), which records the existing native-only payload and missing desktop package, registration, installation/update/removal and fresh-environment acceptance. Do not infer full installer completion from a successful native-only package.
 
 The enabled wiki's Git endpoint returned repository-not-found. Its content inventory remains unresolved, with the checked-in availability record embedded in the website. Local source checks and content preparation do not prove hosted production, built visual acceptance, live routes/assets or About homepage correctness. Those verdicts remain pending until the parent delivery session records actual evidence.
+
+## Hosted Qt archive repair
+
+Run 38201336275 completed documentation production but native production failed before packaging: the hosted tar executable lacks the LZMA codec required by the pinned Qt archives. The bounded repair uses a compatible installed 7-Zip or a SHA-256-pinned official 7zr 26.04 portable tool, with structured member validation before extraction. Qt archive and metadata pins are unchanged. Eight genuine archive listings and six unsafe-member fixtures passed parser checks; actual extraction and exact native production await the fresh workflow. Installer completion remains assigned to the next session.
