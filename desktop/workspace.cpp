@@ -71,4 +71,3 @@ void Workspace::loadVocabulary(QUrl url){
  m_words=words;notify("Local presentation wording loaded for this session only.");
 }
 void Workspace::clearVocabulary(){m_words.clear();notify("Original wording restored.");}
-

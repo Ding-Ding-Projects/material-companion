@@ -96,5 +96,3 @@ ApplicationWindow {
  }
  FileDialog { id: vocabularyPicker; nameFilters: ["JSON files (*.json)"]; onAccepted: workspace.loadVocabulary(selectedFile) }
 }
-
-
