@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "product": "Material Companion",
+  "kind": "documentation-design-reference",
+  "sourceCommit": "8dbc7f23ea77070297b10c91adc674d8b9740d95",
+  "implementationVerdict": "design-only",
+  "runtimeVerdict": "unverified",
+  "referenceEntry": "reference.html",
+  "parameters": {
+    "screen": ["home", "docs", "category", "article", "wiki", "settings", "privacy", "status"],
+    "theme": ["light", "dark"],
+    "language": ["en", "yue", "bilingual"],
+    "state": ["baseline", "no-file", "loaded", "invalid", "cleared"]
+  },
+  "captureConditions": {
+    "viewportsCssPixels": [[1440, 1000], [1280, 900], [768, 1024], [568, 320], [360, 800], [320, 568]],
+    "displayScalePercent": [100, 125, 150, 200],
+    "themes": ["light", "dark"],
+    "languages": ["en", "yue", "bilingual"],
+    "reducedMotion": [true, false],
+    "clock": "no generated clock values; unavailable provenance displayed explicitly",
+    "animation": "no autonomous animation; state transition timing disabled for deterministic captures",
+    "randomness": "none",
+    "productionRoutes": "unimplemented",
+    "rawReferenceCaptures": [],
+    "rawProductionCaptures": [],
+    "comparisonEvidence": []
+  },
+  "components": [
+    {"id":"top-app-bar","spec":"Material Design 3 top app bar composition","production":"registered composition required","states":["normal","compact","focus"]},
+    {"id":"navigation-tabs","spec":"Material Design 3 navigation and browser-style tabs composition","production":"all-edge tab registration required","states":["selected","unselected","overflow","pinned","grouped","locked"]},
+    {"id":"filled-button","spec":"Material Design 3 filled button","production":"official Material Web button","states":["enabled","hover","focus","pressed","disabled"]},
+    {"id":"outlined-button","spec":"Material Design 3 outlined button","production":"official Material Web button","states":["enabled","hover","focus","pressed","disabled"]},
+    {"id":"icon-button","spec":"Material Design 3 icon button","production":"official Material Web icon button","states":["enabled","focus","pressed","disabled"]},
+    {"id":"search-field","spec":"Material Design 3 search field with local clear and anchored builder","production":"registered search composition required","states":["empty","query","no-match","regex-invalid","loading"]},
+    {"id":"article-list","spec":"Material Design 3 list and list-item composition","production":"official list primitives or registered specification-backed composition","states":["populated","empty","filtered","selected","unavailable"]},
+    {"id":"status-chip","spec":"Material Design 3 noninteractive status label composition","production":"registered status composition required","states":["recorded","partial","unverified","unavailable"]},
+    {"id":"reading-surface","spec":"Material Design 3 color, type, shape and spacing composition for document content","production":"registered reading surface required","states":["light","dark","narrow","bilingual","large-text"]},
+    {"id":"disclosure","spec":"Material Design 3 expandable supporting-content composition","production":"registered disclosure required","states":["collapsed","expanded","focus"]},
+    {"id":"preference-panel","spec":"Material Design 3 tabbed settings composition","production":"registered settings, fields, sliders, menus and panels required","states":["default","changed","invalid","reset","unavailable"]}
+  ],
+  "sharedElements": [
+    {"id":"shell.brand","action":"navigate home","states":["normal","focus"],"help":"website-identity","productionGap":"final project-owned mark and licensed assets"},
+    {"id":"shell.version","action":"read exact build metadata","states":["verified","unavailable","invalid"],"help":"version-provenance","reference":"unavailable"},
+    {"id":"shell.updated","action":"read provenance-derived local date/time with seconds and timezone","states":["verified","unavailable","invalid"],"help":"version-provenance","reference":"unavailable"},
+    {"id":"shell.navigation","action":"activate tab; keyboard arrows navigate","states":["selected","overflow","focus","narrow"],"help":"navigation","productionGap":"pin/group/reorder/dock/four searches/locks/appearance"},
+    {"id":"shell.language","action":"cycle language preview","states":["en","yue","bilingual"],"help":"language","productionGap":"complete localized inventory and persisted visitor choice"},
+    {"id":"shell.theme","action":"toggle light/dark preview","states":["light","dark"],"help":"appearance","productionGap":"complete appearance system and persisted visitor choice"},
+    {"id":"shell.skip","action":"focus primary content","states":["hidden-until-focus","visible-focus"],"help":"keyboard-navigation"},
+    {"id":"shell.footer","action":"open privacy or preferences","states":["normal","wrapped","focus"],"help":"website-boundaries"},
+    {"id":"pairing.status","action":"inspect optional extension/native connection; submit only allowed requests through the real trusted route","states":["not-detected","extension-only","connecting","incompatible","grant-required","ready","disconnected","revoked","unknown"],"help":"optional-paired-companion","reference":"not probed","productionGap":"trusted detection, scoped handshake, native review and exact state evidence"}
+  ],
+  "screens": [
+    {"id":"home","route":"#home","states":["no-release","recorded-baseline","missing-provenance","narrow-bilingual"],"elements":["overview.heading","overview.boundary","overview.read-docs","overview.verdicts","overview.task-links","overview.release-status"],"primaryAction":"open documentation","contentRule":"no installer action until verified immutable release manifest","requiredProductionStates":["verified-release-download","missing-evidence","stale-status"]},
+    {"id":"docs","route":"#docs","states":["populated","filtered","no-match","cleared"],"elements":["docs.heading","docs.search","docs.clear","docs.categories","docs.no-results"],"primaryAction":"open category","requiredProductionStates":["complete-article-inventory","regex-valid","regex-invalid","index-unavailable","offline"]},
+    {"id":"category","route":"#category","states":["native-baseline","narrow-bilingual"],"elements":["category.heading","category.article-list","category.coverage-note","category.back"],"primaryAction":"open article","requiredProductionStates":["empty-category","complete-index","search-filtered"]},
+    {"id":"article","route":"#article","states":["excerpt","section-anchor","disclosure-open","disclosure-closed"],"elements":["article.heading","article.evidence-label","article.body","article.toc","article.verification","article.related"],"primaryAction":"read article or related article","requiredProductionStates":["complete-content","missing-source","invalid-link","long-code-table","source-revision"]},
+    {"id":"wiki","route":"#wiki","states":["inventory-unverified"],"elements":["wiki.heading","wiki.inventory-status","wiki.empty","wiki.docs-link"],"primaryAction":"open current documentation","requiredProductionStates":["verified-empty","complete-index","complete-article","access-unavailable","sync-stale"]},
+    {"id":"settings","route":"#settings","states":["baseline","no-file","loaded","invalid","cleared"],"elements":["settings.heading","settings.language","settings.theme","settings.wording-status","settings.requirements"],"primaryAction":"change reference presentation","requiredProductionStates":["own-search","tabs","upload-valid","upload-invalid","replace","clear","corrupt-cache","history-unavailable","locked-control"]},
+    {"id":"privacy","route":"#privacy","states":["static-boundary","narrow-bilingual"],"elements":["privacy.heading","privacy.boundary","privacy.native-link","privacy.local-data","privacy.offline","privacy.static-limit"],"primaryAction":"read exact data boundary","requiredProductionStates":["complete-data-inventory","visitor-reset-guidance","permission-state"]},
+    {"id":"status","route":"#status","states":["recorded-baseline","partial-visual","browser-incomplete","not-released"],"elements":["status.heading","status.native","status.desktop","status.browser","status.release","status.source"],"primaryAction":"inspect bounded verdicts","requiredProductionStates":["current","stale","source-unavailable","implemented-unverified","verified","blocked"]}
+  ],
+  "referenceLimitations": [
+    "Not a production website or primary runtime",
+    "No generic component prototype establishes production Material Design 3 conformance",
+    "Language preview is partial; complete localization is required before acceptance",
+    "No private JSON parsing, upload, cache or file access occurs",
+    "Article content is a labeled excerpt; production must embed complete articles and wiki content",
+    "No build, installer, browser-store, deployment or runtime claim",
+    "No screenshot, visual comparison or layout-probe evidence yet"
+  ]
+}

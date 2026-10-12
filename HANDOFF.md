@@ -17,3 +17,11 @@ Combined native/desktop main8dbc7f2 passed its root build and both CTest targets
 ## Extension output repair
 
 The root build reproduced an obsolete ignored sentinel inside the extension ZIP. Fresh staging now requires the exact five output files and preserves the prior output directory before switching. Four focused regressions pass; the exact repaired root producer and ZIP readback are the next verification step. This repairs output provenance without claiming browser runtime acceptance.
+
+## Documentation and build delivery repair
+
+The delivery lane reuses the existing reviewed documentation design and full article reader. It adds a workflow for every branch push and manual dispatch, independent native/package and documentation jobs, main-only GitHub Pages deployment, and defensive allowlisted output collection. Exact root commands remain build.bat -Silent, build-installer.bat -Silent and build.bat --web-only. Workflows run no tests, lint or standalone type checking and publish no installer release.
+
+The installer work is explicitly handed to the next implementation session. Read [the installer continuation handoff](docs/features/release/installer-handoff.md), which records the existing native-only payload and missing desktop package, registration, installation/update/removal and fresh-environment acceptance. Do not infer full installer completion from a successful native-only package.
+
+The enabled wiki's Git endpoint returned repository-not-found. Its content inventory remains unresolved, with the checked-in availability record embedded in the website. Local source checks and content preparation do not prove hosted production, built visual acceptance, live routes/assets or About homepage correctness. Those verdicts remain pending until the parent delivery session records actual evidence.

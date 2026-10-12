@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "controls": {
+    "md-filled-button": "official Material Web filled button",
+    "md-outlined-button": "official Material Web outlined button",
+    "md-text-button": "official Material Web text button",
+    "md-outlined-text-field": "official Material Web outlined text field",
+    "md-slider": "official Material Web slider",
+    "md-switch": "official Material Web switch",
+    "md-outlined-select": "official Material Web outlined select"
+  },
+  "compositions": [
+    {
+      "id": "top-app-bar",
+      "anatomy": "brand, supporting identity, preference action",
+      "states": ["normal", "compact", "focus"]
+    },
+    {
+      "id": "navigation-tabs",
+      "anatomy": "navigation landmark, tablist, roving focus, selected route",
+      "states": ["selected", "unselected", "focus", "overflow"],
+      "gaps": ["pin", "group", "reorder", "dock", "locked"]
+    },
+    {
+      "id": "search-field",
+      "anatomy": "outlined field, clear action, anchored builder disclosure, inline validation",
+      "states": ["empty", "query", "no-match", "regex-invalid"]
+    },
+    {
+      "id": "article-list",
+      "anatomy": "surface container, linked title, supporting source, decorative trailing arrow",
+      "states": ["populated", "empty", "filtered", "focus"]
+    },
+    {
+      "id": "status-label",
+      "anatomy": "factual text, provenance and limit",
+      "states": ["unverified", "unavailable", "partial"]
+    },
+    {
+      "id": "reading-surface",
+      "anatomy": "surface container, semantic heading hierarchy, paragraphs, bounded code and tables",
+      "states": ["light", "dark", "narrow", "bilingual"]
+    },
+    {
+      "id": "disclosure",
+      "anatomy": "regex builder button, expanded state, local builder panel",
+      "states": ["collapsed", "expanded", "focus"]
+    },
+    {
+      "id": "preference-panel",
+      "anatomy": "search, grouped settings, official fields, independent sliders, local persistence",
+      "states": ["default", "changed", "reset", "unavailable"]
+    },
+    {
+      "id": "snackbar",
+      "anatomy": "live status, contextual dismiss action, persistent user dismissal",
+      "states": ["visible", "dismissed"]
+    }
+  ],
+  "motion": {
+    "stateLayers": "120ms color transitions",
+    "reducedMotion": "OS media query and local preference disable transitions and animation"
+  },
+  "verdict": "registered implementation anatomy; complete runtime and visual acceptance unverified"
+}

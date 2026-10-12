@@ -19,7 +19,7 @@ try {
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             [IO.File]::WriteAllText($cacheReceipt, $lock)
         }
-        & $npm run build
+        if ($env:CI -eq 'true') { & $node build.mjs } else { & $npm run build }
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     } finally { Pop-Location }
     Assert-SourceUnchanged $root $snapshot

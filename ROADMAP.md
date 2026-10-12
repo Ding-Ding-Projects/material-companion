@@ -27,3 +27,11 @@
 ## Excluded from this pass
 
 - [x] Keep release publication, browser-store submission and unrelated project retrofit outside the current scope.
+
+## Documentation and automation delivery
+
+- [ ] Verify the reused complete-article website with exact root production, real browser layout evidence and live routes/assets.
+- [ ] Verify the every-branch build/package workflow and main-only documentation deployment.
+- [ ] Read back the deployed home and exact repository About homepage.
+- [ ] Resolve unavailable wiki source and prove its complete article inventory.
+- [ ] Next session: complete desktop installer payload, host registration and install/update/removal acceptance as recorded in docs/features/release/installer-handoff.md.

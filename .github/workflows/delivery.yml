@@ -1,0 +1,95 @@
+name: Build packages and documentation
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: delivery-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native-package:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare native build tools
+        shell: pwsh
+        run: ./scripts/prepare-ci.ps1
+      - name: Build exact root entrypoint
+        shell: cmd
+        run: build.bat -Silent
+      - name: Package existing native-only payload
+        shell: cmd
+        run: build-installer.bat -Silent
+      - name: Collect safe native outputs
+        if: ${{ always() }}
+        continue-on-error: true
+        shell: pwsh
+        env:
+          DELIVERY_JOB_STATUS: ${{ job.status }}
+        run: ./scripts/collect-ci-output.ps1 -Kind native
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        continue-on-error: true
+        with:
+          name: native-package-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/ci-native
+          if-no-files-found: warn
+          retention-days: 14
+  documentation:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Bundle exact documentation entrypoint
+        shell: cmd
+        run: build.bat --web-only
+      - name: Collect safe documentation outputs
+        if: ${{ always() }}
+        continue-on-error: true
+        shell: pwsh
+        env:
+          DELIVERY_JOB_STATUS: ${{ job.status }}
+        run: ./scripts/collect-ci-output.ps1 -Kind documentation
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        continue-on-error: true
+        with:
+          name: documentation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/ci-documentation
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-pages-artifact@v3
+        if: ${{ success() && github.ref == 'refs/heads/main' }}
+        with:
+          path: website/dist
+  deploy-documentation:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    needs: documentation
+    runs-on: windows-2022
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/configure-pages@v5
+      - uses: actions/deploy-pages@v4
+        id: deployment

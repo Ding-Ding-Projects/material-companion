@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "state": "source-unavailable",
+  "reason": "The repository enables the wiki, but its Git source returned repository-not-found during delivery inspection. It may be uninitialized or inaccessible. This is not evidence of an empty wiki.",
+  "source": "https://github.com/Ding-Ding-Projects/material-companion.wiki.git",
+  "inventoryComplete": false
+}
