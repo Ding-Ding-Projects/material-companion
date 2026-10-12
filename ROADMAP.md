@@ -3,9 +3,11 @@
 ## Foundations
 
 - [x] Record the independently reviewed architecture, scope and interface design.
-- [ ] Implement root bootstrap, native build and Squirrel packaging entrypoints.
+- [x] Verify pinned Qt acquisition and native-only root build/Squirrel packaging on the current host.
+- [ ] Complete missing-toolchain bootstrap and genuine fresh-environment acceptance.
 - [ ] Implement versioned descriptors, project scope validation and two adapters.
-- [ ] Implement the native host, current-user IPC, scoped grants and durable jobs.
+- [x] Implement and independently verify the bounded native operation core, current-user IPC, scoped grants and durable job records.
+- [ ] Connect real browser-to-desktop native review and native-host registration.
 - [ ] Implement the standalone desktop workspace and extension-owned browser workspace.
 
 ## Required features
