@@ -4,13 +4,14 @@ $ErrorActionPreference='Stop'
 try {
  $root=Split-Path $PSScriptRoot -Parent
  $snapshot=Get-SourceSnapshot $root ([bool]$AllowDirtySource)
- $buildArguments=@('-QtRoot',$QtRoot,'-Silent'); if($AllowDirtySource) { $buildArguments+='-AllowDirtySource' }
+ $buildArguments=@('-Silent'); if($QtRoot) { $buildArguments+=@('-QtRoot',$QtRoot) }; if($AllowDirtySource) { $buildArguments+='-AllowDirtySource' }
  & (Join-Path $root 'build.bat') @buildArguments
  if($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
  $tools=Join-Path $root '.tools'; New-Item -ItemType Directory -Force $tools | Out-Null
  if(-not $NugetPath) {
   $NugetPath=Join-Path $tools 'nuget-6.11.1.exe'
   if(-not(Test-Path $NugetPath)) { Invoke-WebRequest -UseBasicParsing 'https://dist.nuget.org/win-x86-commandline/v6.11.1/nuget.exe' -OutFile ($NugetPath+'.download'); Move-Item -LiteralPath ($NugetPath+'.download') -Destination $NugetPath }
+  if(-not(Get-Command Get-AuthenticodeSignature -ErrorAction SilentlyContinue)) { Import-Module (Join-Path ([Environment]::GetFolderPath('System')) 'WindowsPowerShell/v1.0/Modules/Microsoft.PowerShell.Security/Microsoft.PowerShell.Security.psd1') -ErrorAction Stop }
   if((Get-AuthenticodeSignature $NugetPath).Status -ne 'Valid') { throw 'Official NuGet executable signature is invalid.' }
  }
  if(-not $SquirrelPath) {
