@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "conformance-lab",
+  "name": "Conformance Lab",
+  "adapterVersion": "2.1.0",
+  "scope": { "origin": "https://example.github.io", "path": "/lab/" },
+  "capabilities": ["records.filter"],
+  "surfaces": [
+    {
+      "id": "catalogue",
+      "route": "/lab/catalogue/",
+      "owner": "conformance-lab",
+      "state": "ready",
+      "revision": 4,
+      "elements": [
+        {
+          "id": "catalogue.group",
+          "role": "group",
+          "label": "Catalogue",
+          "state": "ready",
+          "help": "Independent fixture group.",
+          "actions": []
+        },
+        {
+          "id": "catalogue.quantity",
+          "parentId": "catalogue.group",
+          "role": "number",
+          "label": "Quantity",
+          "value": 3,
+          "min": 0,
+          "max": 100,
+          "state": "ready",
+          "help": "A bounded quantity.",
+          "actions": ["quantity.double"]
+        },
+        {
+          "id": "catalogue.mode",
+          "parentId": "catalogue.group",
+          "role": "choice",
+          "label": "Mode",
+          "value": "Compact",
+          "options": ["Compact", "Expanded"],
+          "state": "ready",
+          "help": "Presentation choice.",
+          "actions": []
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "quantity.double",
+      "label": "Double quantity",
+      "effect": "local",
+      "input": { "type": "number", "min": 0, "max": 50 },
+      "reviewRequired": false,
+      "cancellable": true,
+      "retryable": true
+    }
+  ]
+}

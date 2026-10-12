@@ -1,0 +1,442 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:material-companion:descriptors:1",
+  "$ref": "#/$defs/ProjectDescriptor",
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]{0,95}$"
+    },
+    "State": {
+      "enum": [
+        "ready",
+        "loading",
+        "disabled",
+        "stale",
+        "error"
+      ]
+    },
+    "ProjectScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "origin",
+        "path"
+      ],
+      "properties": {
+        "origin": {
+          "type": "string",
+          "maxLength": 255,
+          "pattern": "^https://[a-z0-9-]+\\.github\\.io$"
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 512,
+          "pattern": "^/(?:[A-Za-z0-9._~/-]*/)?$"
+        }
+      }
+    },
+    "InputDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "none",
+            "text",
+            "number",
+            "boolean",
+            "choice"
+          ]
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "options": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "text"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "maxLength"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "number"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "min",
+              "max"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "choice"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "options"
+            ]
+          }
+        }
+      ]
+    },
+    "ActionDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "effect",
+        "input",
+        "reviewRequired",
+        "cancellable",
+        "retryable"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "effect": {
+          "enum": [
+            "read",
+            "local",
+            "native"
+          ]
+        },
+        "input": {
+          "$ref": "#/$defs/InputDescriptor"
+        },
+        "requiredGrant": {
+          "$ref": "#/$defs/Id"
+        },
+        "reviewRequired": {
+          "type": "boolean"
+        },
+        "cancellable": {
+          "type": "boolean"
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "effect": {
+                "const": "native"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "requiredGrant"
+            ],
+            "properties": {
+              "reviewRequired": {
+                "const": true
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "required": [
+                "requiredGrant"
+              ]
+            },
+            "properties": {
+              "reviewRequired": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ElementDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "role",
+        "label",
+        "state",
+        "help",
+        "actions"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "parentId": {
+          "$ref": "#/$defs/Id"
+        },
+        "role": {
+          "enum": [
+            "group",
+            "text",
+            "boolean",
+            "number",
+            "choice"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "state": {
+          "$ref": "#/$defs/State"
+        },
+        "help": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "value": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        },
+        "options": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "actions": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/Id"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "role": {
+                "const": "text"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "value"
+            ],
+            "properties": {
+              "value": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "role": {
+                "const": "boolean"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "value"
+            ],
+            "properties": {
+              "value": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "role": {
+                "const": "number"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "value",
+              "min",
+              "max"
+            ],
+            "properties": {
+              "value": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "role": {
+                "const": "choice"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "value",
+              "options"
+            ]
+          }
+        }
+      ]
+    },
+    "SurfaceDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "route",
+        "owner",
+        "state",
+        "revision",
+        "elements"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "route": {
+          "type": "string",
+          "maxLength": 512,
+          "pattern": "^/[^%\\\\?#]*$"
+        },
+        "owner": {
+          "$ref": "#/$defs/Id"
+        },
+        "state": {
+          "$ref": "#/$defs/State"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "elements": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/ElementDescriptor"
+          }
+        }
+      }
+    },
+    "ProjectDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "name",
+        "adapterVersion",
+        "scope",
+        "capabilities",
+        "surfaces",
+        "actions"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "adapterVersion": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "scope": {
+          "$ref": "#/$defs/ProjectScope"
+        },
+        "capabilities": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/Id"
+          }
+        },
+        "surfaces": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/SurfaceDescriptor"
+          }
+        },
+        "actions": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/ActionDescriptor"
+          }
+        }
+      }
+    }
+  }
+}

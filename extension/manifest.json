@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Material Companion",
+  "version": "0.1.0",
+  "description": "Opt-in project inspector and local browser workspace.",
+  "permissions": [
+    "storage",
+    "sidePanel",
+    "activeTab",
+    "scripting",
+    "nativeMessaging"
+  ],
+  "optional_host_permissions": ["https://*.github.io/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_title": "Open Material Companion" },
+  "side_panel": { "default_path": "workspace.html" },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'"
+  }
+}
